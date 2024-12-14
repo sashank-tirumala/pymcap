@@ -8,3 +8,7 @@ wheels/
 
 # venv
 .venv
+
+#binaries
+src/pymcap/binaries/*
+!src/pymcap/binaries/__init__.py
