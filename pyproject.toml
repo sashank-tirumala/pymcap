@@ -3,7 +3,7 @@ name = "pymcap"
 version = "0.1.0"
 description = "Add your description here"
 authors = [
-    { name = "sashank-tirumala", email = "sashank@machines.run" }
+    { name = "sashank-tirumala", email = "stsashank6@gmail.com" }
 ]
 dependencies = []
 readme = "README.md"
@@ -29,9 +29,18 @@ dev-dependencies = [
     "ipython>=8.12.3",
     "sphinx-copybutton>=0.5.2",
 ]
-
-[tool.hatch.metadata]
-allow-direct-references = true
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/**/*.py",
+    "src/pymcap/binaries/**/*",
+]
+ignore-vcs = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pymcap"]
+include = [
+    "src/pymcap/**/*.py",
+    "src/pymcap/binaries/**/*"
+]
+artifacts = ["src/pymcap/**/*.bin"]
+ignore-vcs = true

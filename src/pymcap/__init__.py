@@ -1,2 +1,5 @@
-def hello() -> str:
-    return "Hello from pymcap!"
+# src/pymcap/__init__.py
+
+from .core import PyMCAP
+
+__all__ = ["PyMCAP"]

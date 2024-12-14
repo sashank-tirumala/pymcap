@@ -6,7 +6,7 @@ class PyMCAP:
     def __init__(self):
 
         self.executable = (
-            Path(__file__).parent / "binaries/linux_amd64/mcap"
+            Path(__file__).parent / "binaries/linux_amd64/mcap.bin"
         ).resolve()
         self.__version = subprocess.run(
             [str(self.executable), "version"], stdout=subprocess.PIPE
