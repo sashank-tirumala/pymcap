@@ -113,6 +113,7 @@ pyyaml==6.0.2
     # via myst-parser
     # via pre-commit
 requests==2.32.3
+    # via pymcap
     # via sphinx
 ruff==0.8.3
 snowballstemmer==2.2.0
