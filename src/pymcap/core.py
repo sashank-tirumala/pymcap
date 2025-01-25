@@ -39,7 +39,6 @@ class PyMCAP:
             except Exception as e:
                 self.logger.error(f"Error downloading MCAP executable: {e}")
                 sys.exit(1)
-        
         result = subprocess.run(["chmod", "+x", str(executable_path)], stdout=subprocess.PIPE)
         if result.returncode != 0:
             self.logger.error("Error setting executable permissions")
