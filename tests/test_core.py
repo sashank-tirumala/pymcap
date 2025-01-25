@@ -7,7 +7,6 @@ from pymcap import PyMCAP
 def pymcap() -> PyMCAP:
     return PyMCAP()
 
-
 def test_get_version(pymcap: PyMCAP):
     assert pymcap.version == 'v0.0.51\n'
 
