@@ -1,7 +1,7 @@
 [project]
 name = "pymcap"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.0.1"
+description = "A python package to interact with the MCAP CLI Tool"
 authors = [
     { name = "sashank-tirumala", email = "stsashank6@gmail.com" }
 ]
@@ -12,7 +12,7 @@ readme = "README.md"
 requires-python = ">= 3.8"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling==1.26.3", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [tool.rye]
