@@ -18,9 +18,10 @@ jobs:
         
     - name: Install dependencies
       run: |
-        pip install rye
+        curl -sSf https://rye.astral.sh/get | bash
+        source "$HOME/.rye/env"
         rye sync
-        
+      
     - name: Run tests
       run: |
         python -m pytest tests/
