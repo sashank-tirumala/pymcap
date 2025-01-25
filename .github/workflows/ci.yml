@@ -10,22 +10,17 @@ jobs:
     if: github.event.label.name == 'CI' || contains(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-        
-    - name: Install and configure Rye
-      run: |
-        curl -sSf https://rye.astral.sh/get | RYE_VERSION="0.43.0" RYE_INSTALL_OPTION="--yes" bash
-        echo "$HOME/.rye/shims" >> $GITHUB_PATH
-        
-    - name: Install dependencies
-      run: |
-        rye pin 3.8
-        rye sync
-        
-    - name: Run tests
-      run: python -m pytest tests/
-        
-    # - name: Build documentation
-    #   run: |
-    #     cd docs
-    #     make html
+      - uses: actions/checkout@v3
+      
+      - name: Install and configure Rye
+        run: |
+          curl -sSf https://rye.astral.sh/get | RYE_VERSION="0.43.0" RYE_INSTALL_OPTION="--yes" bash
+          echo "$HOME/.rye/shims" >> $GITHUB_PATH
+          
+      - name: Install dependencies
+        run: |
+          rye pin 3.8
+          rye sync
+          
+      - name: Run tests
+        run: python -m pytest tests/
