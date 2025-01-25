@@ -1,6 +1,8 @@
 name: CI
 
 on:
+  push:
+    branches: [ "**" ]
   pull_request:
     types: [labeled]
 
@@ -10,24 +12,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Install rye
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install and configure Rye
       run: |
         curl -sSf https://rye.astral.sh/get | RYE_VERSION="0.1.0" RYE_INSTALL_OPTION="--yes" bash
-        source "$HOME/.rye/env"
-
-    - name: Show rye version
-      run: |
-        type rye
-        rye --version
-
+        echo "$HOME/.rye/shims" >> $GITHUB_PATH
+        
     - name: Install dependencies
-      run: |
-        rye sync
-
+      run: rye sync
+        
     - name: Run tests
-      run: |
-        python -m pytest tests/
-
+      run: python -m pytest tests/
+        
     # - name: Build documentation
     #   run: |
     #     cd docs
