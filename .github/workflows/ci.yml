@@ -10,13 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Setup Fluent CI CLI
-      uses: fluentci-io/setup-fluentci@v5
-      with:
-        wasm: true
-        plugin: rye
-        args: |
-          setup
+    - name: Install rye
+      run: |
+        curl -sSf https://rye.astral.sh/get | RYE_VERSION="0.1.0" RYE_INSTALL_OPTION="--yes" bash
+        source "$HOME/.rye/env"
 
     - name: Show rye version
       run: |
@@ -31,7 +28,7 @@ jobs:
       run: |
         python -m pytest tests/
 
-    - name: Build documentation
-      run: |
-        cd docs
-        make html
+    # - name: Build documentation
+    #   run: |
+    #     cd docs
+    #     make html
