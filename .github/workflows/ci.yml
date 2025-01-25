@@ -11,16 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Install and configure Rye
         run: |
           curl -sSf https://rye.astral.sh/get | RYE_VERSION="0.43.0" RYE_INSTALL_OPTION="--yes" bash
           echo "$HOME/.rye/shims" >> $GITHUB_PATH
-          
+
       - name: Install dependencies
         run: |
           rye pin 3.8
           rye sync
-          
+          rye run pre-commit install
+
+      - name: Run pre-commit
+        run: rye run pre-commit run --all-files
+
       - name: Run tests
         run: python -m pytest tests/

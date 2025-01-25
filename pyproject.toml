@@ -1,18 +1,18 @@
 [project]
 name = "pymcap"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.0.2"
+description = "A python package to interact with the MCAP CLI Tool"
 authors = [
     { name = "sashank-tirumala", email = "stsashank6@gmail.com" }
 ]
 dependencies = [
-    "requests>=2.32.3",
+    "requests>=2.24.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling==1.26.3", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [tool.rye]
@@ -23,13 +23,8 @@ dev-dependencies = [
     "mypy>=1.13.0",
     "ruff>=0.8.3",
     "black>=24.8.0",
-    "sphinx>=7.1.2",
-    "sphinx-rtd-theme>=3.0.2",
-    "sphinx-autodoc-typehints>=2.0.1",
-    "myst-parser>=3.0.1",
     "pre-commit>=3.5.0",
     "ipython>=8.12.3",
-    "sphinx-copybutton>=0.5.2",
 ]
 [tool.hatch.build.targets.sdist]
 include = [

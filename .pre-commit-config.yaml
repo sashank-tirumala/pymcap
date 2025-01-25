@@ -27,4 +27,5 @@ repos:
     hooks:
       - id: mypy
         exclude: ^docs/
-        additional_dependencies: []
+        additional_dependencies:
+          - types-requests
