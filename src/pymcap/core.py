@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import logging
 import platform
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 import requests
@@ -9,6 +12,11 @@ import tomli
 
 logging.basicConfig(level=logging.DEBUG)
 
+class McapCLIOutput:
+    def __init__(self, output: str, result: bool):
+        self.output = output
+        self.result = result
+        pass
 
 class PyMCAP:
     def __init__(self, log_level: str = "INFO"):
@@ -16,7 +24,7 @@ class PyMCAP:
         self.logger.setLevel(log_level)
         self.logger = logging.getLogger("PyMCAP")
         self.current_dir = Path(__file__).parent
-        self.executable = self.get_executable()
+        self.executable = self.__get_executable()
         self.__version = subprocess.run(
             [self.executable, "version"], stdout=subprocess.PIPE
         ).stdout.decode("utf-8")
@@ -53,7 +61,7 @@ class PyMCAP:
             self.logger.error("Error setting executable permissions")
             sys.exit(1)
 
-    def get_executable(self) -> str:
+    def __get_executable(self) -> str:
         os = self.__get_os()
         self.logger.debug(f"OS: {os}")
         arch = self.__get_architecture()
@@ -100,6 +108,47 @@ class PyMCAP:
             return "windows"
         else:
             raise ValueError(f"Unsupported OS: {system}")
+    
+    def __run(self, command: str ) -> bool:
+        final_command = self.executable + " " + command
+        self.logger.debug(f"Running command: {final_command}")
+        result = subprocess.run(final_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.logger.debug(f"Command output: {result.stdout}")
+        if result.returncode != 0:
+            self.logger.error(f"Command failed: {result.stderr}")
+            return False
+        return True
+
+    def recover(self, file: Path, out: Path | None = None, inplace: bool = True):
+        if not inplace and out is None:
+            raise ValueError("Output file path is required when inplace is False")
+        if file.suffix != ".mcap":
+            raise ValueError("Can only recover .mcap files")
+        if inplace:
+            out = Path(f"/tmp/{str(uuid.uuid4())}.mcap")
+        result = subprocess.run(
+            [self.executable, "recover", str(file), "-o", str(out)], stdout=subprocess.PIPE
+        )
+        if result.returncode != 0:
+            self.logger.error("Error recovering file")
+            out.unlink()
+        else:
+            self.logger.debug(f"File recovered successfully: {out}")
+            if inplace:
+                file.unlink()
+                out.rename(file)
+        return out
+    
+    def is_mcap_corrupted(file_path: str) -> bool:
+        try:
+            output = subprocess.check_output(
+                f"/usr/local/bin/mcap info {file_path}", shell=True, stderr=subprocess.STDOUT, text=True
+            )
+            return "Failed" in output
+        except subprocess.CalledProcessError as e:
+            if e.returncode == 127:
+                raise McapInstallError
+            return "Failed" in e.output
 
 
 if __name__ == "__main__":
