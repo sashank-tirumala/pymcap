@@ -4,7 +4,6 @@ import logging
 import platform
 import subprocess
 import sys
-import uuid
 from pathlib import Path
 
 import requests
@@ -12,33 +11,43 @@ import tomli
 
 logging.basicConfig(level=logging.DEBUG)
 
+
+class McapInstallError(Exception):
+    pass
+
+
 class McapCLIOutput:
     def __init__(self, output: str, result: bool):
         self.output = output
         self.result = result
         pass
 
+
 class PyMCAP:
-    def __init__(self, log_level: str = "INFO"):
+    def __init__(self, log_level: str = "INFO") -> None:
         self.logger = logging.getLogger("PyMCAP")
         self.logger.setLevel(log_level)
         self.logger = logging.getLogger("PyMCAP")
-        self.current_dir = Path(__file__).parent
+        self.current_dir = Path(__file__).parent.resolve()
+        self.pkg_dir = self.current_dir.parent.parent
         self.executable = self.__get_executable()
-        self.__version = subprocess.run(
-            [self.executable, "version"], stdout=subprocess.PIPE
-        ).stdout.decode("utf-8")
+        self.__mcap_cli_version: str | None = None
+        self.__version: str | None = None
         self.logger.debug(f"MCAP version: {self.__version}")
 
     @property
-    def mcap_cli_version(self):
-        return self.__version
+    def mcap_cli_version(self) -> str:
+        if self.__mcap_cli_version is None:
+            self.__mcap_cli_version = self.__run("version").output.strip("\n")
+        return self.__mcap_cli_version
 
     @property
-    def version(self):
-        with open("pyproject.toml", "rb") as f:
-            data = tomli.load(f)
-        return data["project"]["version"]
+    def version(self) -> str:
+        if self.__version is None:
+            with open((self.pkg_dir / "pyproject.toml"), "rb") as f:
+                data = tomli.load(f)
+            self.__version = data["project"]["version"]
+        return self.__version
 
     def __download_executable(self, executable_path: Path, executable_url: str) -> None:
         if executable_path.exists():
@@ -108,49 +117,55 @@ class PyMCAP:
             return "windows"
         else:
             raise ValueError(f"Unsupported OS: {system}")
-    
-    def __run(self, command: str ) -> bool:
+
+    def __run(self, command: str) -> McapCLIOutput:
         final_command = self.executable + " " + command
         self.logger.debug(f"Running command: {final_command}")
-        result = subprocess.run(final_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        self.logger.debug(f"Command output: {result.stdout}")
-        if result.returncode != 0:
-            self.logger.error(f"Command failed: {result.stderr}")
-            return False
-        return True
-
-    def recover(self, file: Path, out: Path | None = None, inplace: bool = True):
-        if not inplace and out is None:
-            raise ValueError("Output file path is required when inplace is False")
-        if file.suffix != ".mcap":
-            raise ValueError("Can only recover .mcap files")
-        if inplace:
-            out = Path(f"/tmp/{str(uuid.uuid4())}.mcap")
         result = subprocess.run(
-            [self.executable, "recover", str(file), "-o", str(out)], stdout=subprocess.PIPE
+            final_command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
+        self.logger.debug(f"Command output: {result.stdout.decode('utf-8')}")
+        res_bool = True
         if result.returncode != 0:
-            self.logger.error("Error recovering file")
-            out.unlink()
-        else:
-            self.logger.debug(f"File recovered successfully: {out}")
-            if inplace:
-                file.unlink()
-                out.rename(file)
-        return out
-    
-    def is_mcap_corrupted(file_path: str) -> bool:
-        try:
-            output = subprocess.check_output(
-                f"/usr/local/bin/mcap info {file_path}", shell=True, stderr=subprocess.STDOUT, text=True
-            )
-            return "Failed" in output
-        except subprocess.CalledProcessError as e:
-            if e.returncode == 127:
-                raise McapInstallError
-            return "Failed" in e.output
+            self.logger.error(f"Command failed: {result.stderr.decode('utf-8')}")
+            res_bool = False
+        return McapCLIOutput(result.stdout.decode("utf-8"), res_bool)
+
+    # def recover(self, file: Path, out: Path | None = None, inplace: bool = True):
+    #     if not inplace and out is None:
+    #         raise ValueError("Output file path is required when inplace is False")
+    #     if file.suffix != ".mcap":
+    #         raise ValueError("Can only recover .mcap files")
+    #     if inplace:
+    #         out = Path(f"/tmp/{str(uuid.uuid4())}.mcap")
+    #     result = subprocess.run(
+    #         [self.executable, "recover", str(file), "-o", str(out)], stdout=subprocess.PIPE
+    #     )
+    #     if result.returncode != 0:
+    #         self.logger.error("Error recovering file")
+    #         out.unlink()
+    #     else:
+    #         self.logger.debug(f"File recovered successfully: {out}")
+    #         if inplace:
+    #             file.unlink()
+    #             out.rename(file)
+    #     return out
+
+    # def is_mcap_corrupted(file_path: str) -> bool:
+    #     try:
+    #         output = subprocess.check_output(
+    #             f"/usr/local/bin/mcap info {file_path}", shell=True, stderr=subprocess.STDOUT, text=True
+    #         )
+    #         return "Failed" in output
+    #     except subprocess.CalledProcessError as e:
+    #         if e.returncode == 127:
+    #             raise McapInstallError
+    #         return "Failed" in e.output
 
 
 if __name__ == "__main__":
-    p = PyMCAP()
+    p = PyMCAP(log_level="DEBUG")
+    print(p.mcap_cli_version)
+    print(p.version)
+    print(p.mcap_cli_version)
     print(p.version)
