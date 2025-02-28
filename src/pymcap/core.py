@@ -131,25 +131,37 @@ class PyMCAP:
             res_bool = False
         return McapCLIOutput(result.stdout.decode("utf-8"), res_bool)
 
-    # def recover(self, file: Path, out: Path | None = None, inplace: bool = True):
-    #     if not inplace and out is None:
-    #         raise ValueError("Output file path is required when inplace is False")
-    #     if file.suffix != ".mcap":
-    #         raise ValueError("Can only recover .mcap files")
-    #     if inplace:
-    #         out = Path(f"/tmp/{str(uuid.uuid4())}.mcap")
-    #     result = subprocess.run(
-    #         [self.executable, "recover", str(file), "-o", str(out)], stdout=subprocess.PIPE
-    #     )
-    #     if result.returncode != 0:
-    #         self.logger.error("Error recovering file")
-    #         out.unlink()
-    #     else:
-    #         self.logger.debug(f"File recovered successfully: {out}")
-    #         if inplace:
-    #             file.unlink()
-    #             out.rename(file)
-    #     return out
+    def recover(
+        self, file: Path, out: Path | None = None, inplace: bool = True
+    ) -> Path | None:
+        if out is None:
+            out = file.parent / (str(file.stem) + "_recovered" + file.suffix)
+        if file.suffix != ".mcap":
+            raise ValueError("Can only recover .mcap files")
+        if not self.is_mcap_corrupted(file):
+            self.logger.debug("File is not corrupted, no need to recover")
+            if inplace:
+                return file
+            else:
+                with open(out, "wb") as f2:
+                    f2.write(file.read_bytes())
+                return out
+        output = self.__run(f"recover {file} -o {out}")
+        if output.result:
+            if inplace:
+                file.unlink()
+                out.rename(file)
+        else:
+            out.unlink()
+            out = None
+        return out
+
+    def is_mcap_corrupted(self, file: Path) -> bool:
+        output = self.__run(f"info {file}")
+        if not output.result:
+            return True
+        else:
+            return "Failed" in output.output
 
     # def is_mcap_corrupted(file_path: str) -> bool:
     #     try:

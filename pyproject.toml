@@ -25,6 +25,7 @@ dev-dependencies = [
     "black>=24.8.0",
     "pre-commit>=3.5.0",
     "ipython>=8.12.3",
+    "mcap>=1.2.2",
 ]
 [tool.hatch.build.targets.sdist]
 include = [
