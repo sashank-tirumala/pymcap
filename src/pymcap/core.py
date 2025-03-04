@@ -163,16 +163,19 @@ class PyMCAP:
         else:
             return "Failed" in output.output
 
-    # def is_mcap_corrupted(file_path: str) -> bool:
-    #     try:
-    #         output = subprocess.check_output(
-    #             f"/usr/local/bin/mcap info {file_path}", shell=True, stderr=subprocess.STDOUT, text=True
-    #         )
-    #         return "Failed" in output
-    #     except subprocess.CalledProcessError as e:
-    #         if e.returncode == 127:
-    #             raise McapInstallError
-    #         return "Failed" in e.output
+    def merge(self, merge_files: list[Path], out: Path) -> Path | None:
+        command = "merge "
+        for merge_file in merge_files:
+            if merge_file.suffix != ".mcap":
+                raise ValueError("Can only merge .mcap files")
+            self.recover(merge_file, inplace=True)
+            command += f"{merge_file} "
+        command += f"-o {out}"
+        output = self.__run(command)
+        if output.result:
+            return out
+        else:
+            return None
 
 
 if __name__ == "__main__":

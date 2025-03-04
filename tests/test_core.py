@@ -2,9 +2,11 @@ import pytest
 
 from pymcap import PyMCAP
 from mcap.writer import Writer
+from mcap.reader import make_reader
 from time import time_ns
 import json
 from pathlib import Path
+from typing import List
 
 
 @pytest.fixture(scope="session")
@@ -12,7 +14,7 @@ def pymcap() -> PyMCAP:
     return PyMCAP()
 
 
-def write_to_simple_mcap(mcap_file: Path, to_recover: bool) -> Path:
+def write_to_simple_mcap(mcap_file: Path, idx: int, to_recover: bool) -> Path:
     with open(mcap_file, "wb") as stream:
         writer = Writer(stream)
         writer.start()
@@ -38,7 +40,7 @@ def write_to_simple_mcap(mcap_file: Path, to_recover: bool) -> Path:
         writer.add_message(
             channel_id=channel_id,
             log_time=time_ns(),
-            data=json.dumps({"sample": "test"}).encode("utf-8"),
+            data=json.dumps({"sample": f"test_{idx}"}).encode("utf-8"),
             publish_time=time_ns(),
         )
         if not to_recover:
@@ -49,15 +51,34 @@ def write_to_simple_mcap(mcap_file: Path, to_recover: bool) -> Path:
 @pytest.fixture
 def normal_mcap_file(tmp_path: Path) -> Path:
     mcap_file = tmp_path / "normal.mcap"
-    write_to_simple_mcap(mcap_file, False)
+    write_to_simple_mcap(mcap_file, 0, False)
     return Path(mcap_file)
 
 
 @pytest.fixture
 def corrupted_mcap(tmp_path: Path) -> Path:
     mcap_file = tmp_path / "normal.mcap"
-    write_to_simple_mcap(mcap_file, True)
+    write_to_simple_mcap(mcap_file, 0, True)
     return Path(mcap_file)
+
+
+@pytest.fixture
+def merge_files(tmp_path: Path) -> List[Path]:
+    mcap_files = []
+    for i in range(3):
+        mcap_file = Path(tmp_path / f"normal_{i}.mcap")
+        write_to_simple_mcap(mcap_file, i, False)
+        mcap_files.append(mcap_file)
+    return mcap_files
+
+
+def get_mcap_data(mcap_file: Path) -> list:
+    with open(mcap_file, "rb") as stream:
+        reader = make_reader(stream)
+        data = []
+        for schema, channel, message in reader.iter_messages():
+            data.append(json.loads(message.data.decode("utf-8")))
+        return data
 
 
 def test_get_mcap_cli_version(pymcap: PyMCAP) -> None:
@@ -111,3 +132,14 @@ def test_recover_corrupted_file_outplace(
     recovered = pymcap.recover(corrupted_mcap, out=out_file, inplace=False)
     assert recovered == out_file
     assert check_if_mcap_equal(recovered, normal_mcap_file)
+
+
+def test_merge_files(pymcap: PyMCAP, merge_files: List[Path]) -> None:
+    out_file = merge_files[0].parent / "merged.mcap"
+    merged = pymcap.merge(merge_files, out_file)
+    raw_data = [{"sample": "test_0"}, {"sample": "test_1"}, {"sample": "test_2"}]
+    assert type(merged) == Path
+    assert merged.exists()
+    assert merged == out_file
+    data = get_mcap_data(merged)
+    assert data == raw_data
