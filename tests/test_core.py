@@ -107,23 +107,23 @@ def test_mcap_corrupted_for_currupted_file(
 
 def test_recover_normal_file_inplace(pymcap: PyMCAP, normal_mcap_file: Path) -> None:
     recovered = pymcap.recover(normal_mcap_file, inplace=True)
-    assert recovered == normal_mcap_file
-    assert check_if_mcap_equal(recovered, normal_mcap_file)
+    assert recovered.output_file == normal_mcap_file
+    assert check_if_mcap_equal(recovered.output_file, normal_mcap_file)
 
 
 def test_recover_normal_file_outplace(pymcap: PyMCAP, normal_mcap_file: Path) -> None:
     out_file = normal_mcap_file.parent / "recovered.mcap"
     recovered = pymcap.recover(normal_mcap_file, out=out_file, inplace=False)
-    assert recovered == out_file
-    assert check_if_mcap_equal(recovered, normal_mcap_file)
+    assert recovered.output_file == out_file
+    assert check_if_mcap_equal(recovered.output_file, normal_mcap_file)
 
 
 def test_recover_corrupted_file_inplace(
     pymcap: PyMCAP, corrupted_mcap: Path, normal_mcap_file: Path
 ) -> None:
     recovered = pymcap.recover(corrupted_mcap, inplace=True)
-    assert recovered == normal_mcap_file
-    assert check_if_mcap_equal(recovered, normal_mcap_file)
+    assert recovered.output_file == normal_mcap_file
+    assert check_if_mcap_equal(recovered.output_file, normal_mcap_file)
 
 
 def test_recover_corrupted_file_outplace(
@@ -131,8 +131,8 @@ def test_recover_corrupted_file_outplace(
 ) -> None:
     out_file = corrupted_mcap.parent / "recovered.mcap"
     recovered = pymcap.recover(corrupted_mcap, out=out_file, inplace=False)
-    assert recovered == out_file
-    assert check_if_mcap_equal(recovered, normal_mcap_file)
+    assert recovered.output_file == out_file
+    assert check_if_mcap_equal(recovered.output_file, normal_mcap_file)
 
 
 def test_merge_files(pymcap: PyMCAP, merge_files: List[Path]) -> None:
@@ -140,7 +140,7 @@ def test_merge_files(pymcap: PyMCAP, merge_files: List[Path]) -> None:
     merged = pymcap.merge(merge_files, out_file)
     raw_data = [{"sample": "test_0"}, {"sample": "test_1"}, {"sample": "test_2"}]
     assert merged is not None
-    assert merged.exists()
-    assert merged == out_file
-    data = get_mcap_data(merged)
+    assert merged.output_file.exists()
+    assert merged.output_file == out_file
+    data = get_mcap_data(merged.output_file)
     assert data == raw_data

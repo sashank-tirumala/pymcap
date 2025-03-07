@@ -141,8 +141,8 @@ class PyMCAP:
         else:
             raise ValueError(f"Unsupported OS: {system}")
 
-    def __run(self, command: str) -> McapCLIOutput:
-        final_command = self.executable + " " + command
+    def __run(self, command: str, flags: str = "") -> McapCLIOutput:
+        final_command = self.executable + " " + command + flags
         self.logger.debug(f"Running command: {final_command}")
         result = subprocess.run(
             final_command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -162,7 +162,7 @@ class PyMCAP:
 
     def recover(
         self, file: Path, out: Path | None = None, inplace: bool = True
-    ) -> Path | None:
+    ) -> McapCLIOutput:
         if out is None:
             out = file.parent / (str(file.stem) + "_recovered" + file.suffix)
         if file.suffix != ".mcap":
@@ -170,20 +170,27 @@ class PyMCAP:
         if not self.is_mcap_corrupted(file):
             self.logger.debug("File is not corrupted, no need to recover")
             if inplace:
-                return file
+                return McapCLIOutput(output_file=file, success=True)
             else:
                 with open(out, "wb") as f2:
                     f2.write(file.read_bytes())
-                return out
+                return McapCLIOutput(output_file=out, success=True)
         output = self.__run(f"recover {file} -o {out}")
+        output_res = McapCLIOutput(
+            stdout=output.stdout,
+            stderr=output.stderr,
+            success=output.success,
+        )
         if output.success:
             if inplace:
                 file.unlink()
                 out.rename(file)
+                output_res.output_file = file
+            else:
+                output_res.output_file = out
         else:
             out.unlink()
-            out = None
-        return out
+        return output_res
 
     def is_mcap_corrupted(self, file: Path) -> bool:
         output = self.__run(f"info {file}")
@@ -192,7 +199,7 @@ class PyMCAP:
         else:
             return "Failed" in output.stdout
 
-    def merge(self, merge_files: list[Path], out: Path) -> Path | None:
+    def merge(self, merge_files: list[Path], out: Path) -> McapCLIOutput:
         command = "merge "
         for merge_file in merge_files:
             if merge_file.suffix != ".mcap":
@@ -201,10 +208,12 @@ class PyMCAP:
             command += f"{merge_file} "
         command += f"-o {out}"
         output = self.__run(command)
-        if output.success:
-            return out
-        else:
-            return None
+        return McapCLIOutput(
+            stdout=output.stdout,
+            stderr=output.stderr,
+            output_file=out,
+            success=output.success,
+        )
 
 
 if __name__ == "__main__":
