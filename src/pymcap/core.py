@@ -8,9 +8,8 @@ from pathlib import Path
 from typing import Any
 
 import requests
-import tomli
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 class McapCLIOutput:
@@ -51,8 +50,8 @@ class PyMCAP:
         self.pkg_dir = self.current_dir.parent.parent
         self.executable = self.__get_executable()
         self.__mcap_cli_version: str | None = None
-        self.__version: str | None = None
-        self.logger.debug(f"MCAP version: {self.__version}")
+        self.logger.debug(f"MCAP version: {self.mcap_cli_version}")
+        self.logger.debug(f"MCAP executable: {self.executable}")
 
     @property
     def mcap_cli_version(self) -> str:
@@ -62,11 +61,7 @@ class PyMCAP:
 
     @property
     def version(self) -> str:
-        if self.__version is None:
-            with open((self.pkg_dir / "pyproject.toml"), "rb") as f:
-                data = tomli.load(f)
-            self.__version = data["project"]["version"]
-        return self.__version
+        return "0.1.1"
 
     def __download_executable(self, executable_path: Path, executable_url: str) -> None:
         if executable_path.exists():
