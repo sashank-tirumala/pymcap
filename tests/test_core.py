@@ -1,12 +1,13 @@
-import pytest
-
-from pymcap import PyMCAP
-from mcap.writer import Writer
-from mcap.reader import make_reader
-from time import time_ns
 import json
 from pathlib import Path
+from time import time_ns
 from typing import List
+
+import pytest
+from mcap.reader import make_reader
+from mcap.writer import Writer
+
+from pymcap import PyMCAP
 
 
 @pytest.fixture(scope="session")
@@ -138,7 +139,7 @@ def test_merge_files(pymcap: PyMCAP, merge_files: List[Path]) -> None:
     out_file = merge_files[0].parent / "merged.mcap"
     merged = pymcap.merge(merge_files, out_file)
     raw_data = [{"sample": "test_0"}, {"sample": "test_1"}, {"sample": "test_2"}]
-    assert type(merged) == Path
+    assert merged is not None
     assert merged.exists()
     assert merged == out_file
     data = get_mcap_data(merged)
