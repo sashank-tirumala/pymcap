@@ -87,7 +87,7 @@ def test_get_mcap_cli_version(pymcap: PyMCAP) -> None:
 
 
 def test_get_version(pymcap: PyMCAP) -> None:
-    assert pymcap.version == "0.0.2"
+    assert pymcap.version == "0.1"
 
 
 def check_if_mcap_equal(file1: Path, file2: Path) -> bool:

@@ -1,6 +1,6 @@
 [project]
 name = "pymcap"
-version = "0.0.2"
+version = "0.1"
 description = "A python package to interact with the MCAP CLI Tool"
 authors = [
     { name = "sashank-tirumala", email = "stsashank6@gmail.com" }
