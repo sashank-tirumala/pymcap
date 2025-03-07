@@ -156,6 +156,19 @@ class PyMCAP:
             output_res.success = True
         return output_res
 
+    def run_command(
+        self,
+        command: str,
+    ) -> McapCLIOutput:
+        """
+        Run a custom command on the mcap executable.
+        Args:
+            command (str): The command to run.
+        Returns:
+            McapCLIOutput: The output of the command.
+        """
+        return self.__run(command)
+
     def recover(
         self, file: Path, out: Path | None = None, inplace: bool = True, flags: str = ""
     ) -> McapCLIOutput:
