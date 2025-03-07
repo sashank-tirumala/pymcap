@@ -61,7 +61,7 @@ class PyMCAP:
 
     @property
     def version(self) -> str:
-        return "0.1.1"
+        return "0.2"
 
     def __download_executable(self, executable_path: Path, executable_url: str) -> None:
         if executable_path.exists():
