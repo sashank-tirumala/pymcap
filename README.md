@@ -46,11 +46,6 @@ print(f"Merged file path: {merged_result.output_file}")
 
 - Python interface to MCAP CLI tools with a simple, intuitive API
 - Automatically downloads and bundles the MCAP CLI with the Python package - no separate installation needed
-- Corrupted MCAP file detection
-- Recovery of corrupted MCAP files
-- Merging of multiple MCAP files
-- Cross-platform support (Linux, macOS, Windows)
-- Support for both ARM64 and AMD64 architectures
 
 ## API Reference
 
@@ -152,40 +147,4 @@ MIT License
 
 ## Acknowledgements
 
-Built on the official MCAP CLI tool: https://mcap.dev
-# PyMCAP
-This provides a python interface to the go [MCAP cli tool](https://mcap.dev/guides/cli), so that you can merge mcaps and recover them conveniently from your python code
-
-## Installation
-```bash
-pip install pymcap
-```
-
-## Quickstart
-```python
-from pymcap import PyMCAP
-pymc = PyMCAP()
-print(pymc.mcap_cli_version)
-```
-
-## Features
- - Python interface to MCAP CLI tools.
- - Bundles the MCAP cli with the python package, so you don't need to install the MCAP CLI separately.
-
-## Requirements
-- Python 3.8+
-- Operating system: Linux, macOS, or Windows, with arm64 or amd64 architectures.
-
-## Testing
-```bash
-pytest tests
-```
-
-## Contributing
-Add the ci tag to your branch to run the CI Tests
-
-## License
-MIT License
-
-## Acknowledgements
 Built on the official MCAP CLI tool: https://mcap.dev
