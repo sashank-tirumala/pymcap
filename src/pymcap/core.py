@@ -5,6 +5,7 @@ import platform
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import requests
 import tomli
@@ -12,15 +13,33 @@ import tomli
 logging.basicConfig(level=logging.DEBUG)
 
 
-class McapInstallError(Exception):
-    pass
-
-
 class McapCLIOutput:
-    def __init__(self, output: str, result: bool):
-        self.output = output
-        self.result = result
-        pass
+    def __init__(
+        self,
+        stdout: str = "",
+        stderr: str = "",
+        output_file: Path = Path(""),
+        success: bool = False,
+    ) -> None:
+        self.stdout = stdout
+        self.stderr = stderr
+        self.output_file = output_file
+        self.success = success
+
+    def __str__(self) -> str:
+        return f"Output: {self.stdout}\nError: {self.stderr}\nOutput Path: {self.output_file}\nResult: {self.success}"
+
+    def __getitem__(self, key: str) -> Any:
+        if key == "stdout":
+            return self.stdout
+        elif key == "stderr":
+            return self.stderr
+        elif key == "output_file":
+            return self.output_file
+        elif key == "success":
+            return self.success
+        else:
+            raise KeyError(f"Invalid key: {key}")
 
 
 class PyMCAP:
@@ -38,7 +57,7 @@ class PyMCAP:
     @property
     def mcap_cli_version(self) -> str:
         if self.__mcap_cli_version is None:
-            self.__mcap_cli_version = self.__run("version").output.strip("\n")
+            self.__mcap_cli_version = self.__run("version").stdout.strip("\n")
         return self.__mcap_cli_version
 
     @property
@@ -118,22 +137,41 @@ class PyMCAP:
         else:
             raise ValueError(f"Unsupported OS: {system}")
 
-    def __run(self, command: str) -> McapCLIOutput:
-        final_command = self.executable + " " + command
+    def __run(self, command: str, flags: str = "") -> McapCLIOutput:
+        final_command = self.executable + " " + command + flags
         self.logger.debug(f"Running command: {final_command}")
         result = subprocess.run(
             final_command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
+        output_res = McapCLIOutput(
+            stdout="", stderr="", output_file=Path(""), success=False
+        )
         self.logger.debug(f"Command output: {result.stdout.decode('utf-8')}")
-        res_bool = True
         if result.returncode != 0:
+            output_res.stderr = result.stderr.decode("utf-8")
+            output_res.success = False
             self.logger.error(f"Command failed: {result.stderr.decode('utf-8')}")
-            res_bool = False
-        return McapCLIOutput(result.stdout.decode("utf-8"), res_bool)
+        else:
+            output_res.stdout = result.stdout.decode("utf-8")
+            output_res.success = True
+        return output_res
+
+    def run_command(
+        self,
+        command: str,
+    ) -> McapCLIOutput:
+        """
+        Run a custom command on the mcap executable.
+        Args:
+            command (str): The command to run.
+        Returns:
+            McapCLIOutput: The output of the command.
+        """
+        return self.__run(command)
 
     def recover(
-        self, file: Path, out: Path | None = None, inplace: bool = True
-    ) -> Path | None:
+        self, file: Path, out: Path | None = None, inplace: bool = True, flags: str = ""
+    ) -> McapCLIOutput:
         if out is None:
             out = file.parent / (str(file.stem) + "_recovered" + file.suffix)
         if file.suffix != ".mcap":
@@ -141,43 +179,49 @@ class PyMCAP:
         if not self.is_mcap_corrupted(file):
             self.logger.debug("File is not corrupted, no need to recover")
             if inplace:
-                return file
+                return McapCLIOutput(output_file=file, success=True)
             else:
                 with open(out, "wb") as f2:
                     f2.write(file.read_bytes())
-                return out
-        output = self.__run(f"recover {file} -o {out}")
-        if output.result:
+                return McapCLIOutput(output_file=out, success=True)
+        output = self.__run(f"recover {file} -o {out}", flags=flags)
+        output_res = McapCLIOutput(
+            stdout=output.stdout,
+            stderr=output.stderr,
+            success=output.success,
+        )
+        if output.success:
             if inplace:
                 file.unlink()
                 out.rename(file)
+                output_res.output_file = file
+            else:
+                output_res.output_file = out
         else:
             out.unlink()
-            out = None
-        return out
+        return output_res
 
     def is_mcap_corrupted(self, file: Path) -> bool:
         output = self.__run(f"info {file}")
-        if not output.result:
+        if not output.success:
             return True
         else:
-            return "Failed" in output.output
+            return False
 
-    # def is_mcap_corrupted(file_path: str) -> bool:
-    #     try:
-    #         output = subprocess.check_output(
-    #             f"/usr/local/bin/mcap info {file_path}", shell=True, stderr=subprocess.STDOUT, text=True
-    #         )
-    #         return "Failed" in output
-    #     except subprocess.CalledProcessError as e:
-    #         if e.returncode == 127:
-    #             raise McapInstallError
-    #         return "Failed" in e.output
-
-
-if __name__ == "__main__":
-    p = PyMCAP(log_level="DEBUG")
-    print(p.mcap_cli_version)
-    print(p.version)
-    print(p.mcap_cli_version)
-    print(p.version)
+    def merge(
+        self, merge_files: list[Path], out: Path, flags: str = ""
+    ) -> McapCLIOutput:
+        command = "merge "
+        for merge_file in merge_files:
+            if merge_file.suffix != ".mcap":
+                raise ValueError("Can only merge .mcap files")
+            self.recover(merge_file, inplace=True)
+            command += f"{merge_file} "
+        command += f"-o {out}"
+        output = self.__run(command, flags=flags)
+        return McapCLIOutput(
+            stdout=output.stdout,
+            stderr=output.stderr,
+            output_file=out,
+            success=output.success,
+        )
