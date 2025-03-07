@@ -13,10 +13,6 @@ import tomli
 logging.basicConfig(level=logging.DEBUG)
 
 
-class McapInstallError(Exception):
-    pass
-
-
 class McapCLIOutput:
     def __init__(
         self,
@@ -197,7 +193,7 @@ class PyMCAP:
         if not output.success:
             return True
         else:
-            return "Failed" in output.stdout
+            return False
 
     def merge(
         self, merge_files: list[Path], out: Path, flags: str = ""
