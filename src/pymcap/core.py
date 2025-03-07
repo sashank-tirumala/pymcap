@@ -161,7 +161,7 @@ class PyMCAP:
         return output_res
 
     def recover(
-        self, file: Path, out: Path | None = None, inplace: bool = True
+        self, file: Path, out: Path | None = None, inplace: bool = True, flags: str = ""
     ) -> McapCLIOutput:
         if out is None:
             out = file.parent / (str(file.stem) + "_recovered" + file.suffix)
@@ -175,7 +175,7 @@ class PyMCAP:
                 with open(out, "wb") as f2:
                     f2.write(file.read_bytes())
                 return McapCLIOutput(output_file=out, success=True)
-        output = self.__run(f"recover {file} -o {out}")
+        output = self.__run(f"recover {file} -o {out}", flags=flags)
         output_res = McapCLIOutput(
             stdout=output.stdout,
             stderr=output.stderr,
@@ -199,7 +199,9 @@ class PyMCAP:
         else:
             return "Failed" in output.stdout
 
-    def merge(self, merge_files: list[Path], out: Path) -> McapCLIOutput:
+    def merge(
+        self, merge_files: list[Path], out: Path, flags: str = ""
+    ) -> McapCLIOutput:
         command = "merge "
         for merge_file in merge_files:
             if merge_file.suffix != ".mcap":
@@ -207,18 +209,10 @@ class PyMCAP:
             self.recover(merge_file, inplace=True)
             command += f"{merge_file} "
         command += f"-o {out}"
-        output = self.__run(command)
+        output = self.__run(command, flags=flags)
         return McapCLIOutput(
             stdout=output.stdout,
             stderr=output.stderr,
             output_file=out,
             success=output.success,
         )
-
-
-if __name__ == "__main__":
-    p = PyMCAP(log_level="DEBUG")
-    print(p.mcap_cli_version)
-    print(p.version)
-    print(p.mcap_cli_version)
-    print(p.version)
