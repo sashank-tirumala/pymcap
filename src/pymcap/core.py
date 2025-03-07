@@ -5,6 +5,7 @@ import platform
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import requests
 import tomli
@@ -17,10 +18,32 @@ class McapInstallError(Exception):
 
 
 class McapCLIOutput:
-    def __init__(self, output: str, result: bool):
-        self.output = output
-        self.result = result
-        pass
+    def __init__(
+        self,
+        stdout: str = "",
+        stderr: str = "",
+        output_file: Path = Path(""),
+        success: bool = False,
+    ) -> None:
+        self.stdout = stdout
+        self.stderr = stderr
+        self.output_file = output_file
+        self.success = success
+
+    def __str__(self) -> str:
+        return f"Output: {self.stdout}\nError: {self.stderr}\nOutput Path: {self.output_file}\nResult: {self.success}"
+
+    def __getitem__(self, key: str) -> Any:
+        if key == "stdout":
+            return self.stdout
+        elif key == "stderr":
+            return self.stderr
+        elif key == "output_file":
+            return self.output_file
+        elif key == "success":
+            return self.success
+        else:
+            raise KeyError(f"Invalid key: {key}")
 
 
 class PyMCAP:
@@ -38,7 +61,7 @@ class PyMCAP:
     @property
     def mcap_cli_version(self) -> str:
         if self.__mcap_cli_version is None:
-            self.__mcap_cli_version = self.__run("version").output.strip("\n")
+            self.__mcap_cli_version = self.__run("version").stdout.strip("\n")
         return self.__mcap_cli_version
 
     @property
@@ -124,12 +147,18 @@ class PyMCAP:
         result = subprocess.run(
             final_command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
+        output_res = McapCLIOutput(
+            stdout="", stderr="", output_file=Path(""), success=False
+        )
         self.logger.debug(f"Command output: {result.stdout.decode('utf-8')}")
-        res_bool = True
         if result.returncode != 0:
+            output_res.stderr = result.stderr.decode("utf-8")
+            output_res.success = False
             self.logger.error(f"Command failed: {result.stderr.decode('utf-8')}")
-            res_bool = False
-        return McapCLIOutput(result.stdout.decode("utf-8"), res_bool)
+        else:
+            output_res.stdout = result.stdout.decode("utf-8")
+            output_res.success = True
+        return output_res
 
     def recover(
         self, file: Path, out: Path | None = None, inplace: bool = True
@@ -147,7 +176,7 @@ class PyMCAP:
                     f2.write(file.read_bytes())
                 return out
         output = self.__run(f"recover {file} -o {out}")
-        if output.result:
+        if output.success:
             if inplace:
                 file.unlink()
                 out.rename(file)
@@ -158,10 +187,10 @@ class PyMCAP:
 
     def is_mcap_corrupted(self, file: Path) -> bool:
         output = self.__run(f"info {file}")
-        if not output.result:
+        if not output.success:
             return True
         else:
-            return "Failed" in output.output
+            return "Failed" in output.stdout
 
     def merge(self, merge_files: list[Path], out: Path) -> Path | None:
         command = "merge "
@@ -172,7 +201,7 @@ class PyMCAP:
             command += f"{merge_file} "
         command += f"-o {out}"
         output = self.__run(command)
-        if output.result:
+        if output.success:
             return out
         else:
             return None
